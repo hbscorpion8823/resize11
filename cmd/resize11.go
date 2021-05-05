@@ -62,7 +62,7 @@ func main() {
 	nowTime := time.Now()
 	dstFilename := nowTime.Format("2006-01-02-150405")
 
-	dstPath := filepath.Join(dstDir, dstFilename+"."+dstExt)
+	dstPath := filepath.Join(dstDir, dstFilename+dstExt)
 	dstfile, err := os.Create(dstPath)
 
 	if err != nil {
