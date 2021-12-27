@@ -44,10 +44,10 @@ func main() {
 
 	//rectange info of image
 	srcrct := srcimg.Bounds()
-	maxNum := int(math.Max(float64(srcrct.Dx()), float64(srcrct.Dy())))
+	minNum := int(math.Min(float64(srcrct.Dx()), float64(srcrct.Dy())))
 
 	//scale 1:1
-	dstimg := image.NewRGBA(image.Rect(0, 0, maxNum, maxNum))
+	dstimg := image.NewRGBA(image.Rect(0, 0, minNum, minNum))
 	draw.CatmullRom.Scale(dstimg, dstimg.Bounds(), srcimg, srcrct, draw.Over, nil)
 
 	fmt.Printf("Width: %d --> %d \n", srcrct.Dx(), dstimg.Bounds().Dx())
