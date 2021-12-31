@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"golang.org/x/image/draw"
+	"gocv.io/x/gocv"
 )
 
 func main() {
@@ -26,37 +26,44 @@ func main() {
 		return
 	}
 
-	//open image file
-	srcfile, err := os.Open(flag.Arg(0)) //maybe file path
+	// 入力ファイルからイメージを取得
+	srcPath := flag.Arg(0)
+	inCvImg := gocv.IMRead(srcPath, gocv.IMReadColor)
+	// 画像の型を特定するための処理
+	srcfile, err := os.Open(srcPath) //maybe file path
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
 	defer srcfile.Close() // file close (after operation end)
-
-	//decode image
-	srcimg, t, err := image.Decode(srcfile)
+	_, t, err := image.Decode(srcfile)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
-	fmt.Println("Type of image:", t)
 
 	//rectange info of image
-	srcrct := srcimg.Bounds()
-	minNum := int(math.Min(float64(srcrct.Dx()), float64(srcrct.Dy())))
+	rowSize := inCvImg.Rows()
+	colSize := inCvImg.Cols()
+	minNum := int(math.Min(float64(rowSize), float64(colSize)))
 
 	//scale 1:1
-	dstimg := image.NewRGBA(image.Rect(0, 0, minNum, minNum))
-	draw.CatmullRom.Scale(dstimg, dstimg.Bounds(), srcimg, srcrct, draw.Over, nil)
+	originPoint := image.Point{colSize - minNum, rowSize - minNum}
+	outputImg := gocv.NewMatWithSize(minNum, minNum, gocv.MatTypeCV8U)
+	gocv.Resize(inCvImg, &outputImg, originPoint, 1.0, 1.0, gocv.InterpolationMax)
+	outputImg = outputImg.Region(image.Rectangle{image.Point{0, 0}, image.Point{minNum, minNum}})
+	dstimg, _ := outputImg.ToImage()
 
-	fmt.Printf("Width: %d --> %d \n", srcrct.Dx(), dstimg.Bounds().Dx())
-	fmt.Printf("Height: %d --> %d \n", srcrct.Dy(), dstimg.Bounds().Dy())
+	fmt.Printf("dstimg.Bounds.Dx: %d\n", dstimg.Bounds().Dx())
+	fmt.Printf("dstimg.Bounds.Dy: %d\n", dstimg.Bounds().Dy())
+
+	fmt.Printf("Width: %d --> %d \n", colSize, minNum)
+	fmt.Printf("Height: %d --> %d \n", rowSize, minNum)
 
 	// dst dir
-	dstDir := filepath.Dir(flag.Arg(0))
+	dstDir := filepath.Dir(srcPath)
 	// dst extension
-	dstExt := filepath.Ext(flag.Arg(0))
+	dstExt := filepath.Ext(srcPath)
 
 	// dst file name
 	nowTime := time.Now()
