@@ -48,14 +48,11 @@ func main() {
 	minNum := int(math.Min(float64(rowSize), float64(colSize)))
 
 	//scale 1:1
-	originPoint := image.Point{colSize - minNum, rowSize - minNum}
-	outputImg := gocv.NewMatWithSize(minNum, minNum, gocv.MatTypeCV8U)
+	originPoint := image.Point{0, 0}
+	outputImg := gocv.NewMatWithSize(colSize, rowSize, gocv.MatTypeCV8U)
 	gocv.Resize(inCvImg, &outputImg, originPoint, 1.0, 1.0, gocv.InterpolationMax)
 	outputImg = outputImg.Region(image.Rectangle{image.Point{0, 0}, image.Point{minNum, minNum}})
 	dstimg, _ := outputImg.ToImage()
-
-	fmt.Printf("dstimg.Bounds.Dx: %d\n", dstimg.Bounds().Dx())
-	fmt.Printf("dstimg.Bounds.Dy: %d\n", dstimg.Bounds().Dy())
 
 	fmt.Printf("Width: %d --> %d \n", colSize, minNum)
 	fmt.Printf("Height: %d --> %d \n", rowSize, minNum)
