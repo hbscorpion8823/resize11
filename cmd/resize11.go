@@ -3,17 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"image"
-	"image/gif"
-	"image/jpeg"
-	"image/png"
+	"math"
 	"os"
 
-	"math"
 	"path/filepath"
 	"time"
 
-	"gocv.io/x/gocv"
+	"gopkg.in/gographics/imagick.v2/imagick"
 )
 
 func main() {
@@ -25,37 +21,31 @@ func main() {
 		fmt.Fprintln(os.Stderr, os.ErrInvalid)
 		return
 	}
+	// ImageMagickモジュール初期化（終わったら停止）
+	imagick.Initialize()
+	defer imagick.Terminate()
 
 	// 入力ファイルからイメージを取得
 	srcPath := flag.Arg(0)
-	inCvImg := gocv.IMRead(srcPath, gocv.IMReadColor)
-	// 画像の型を特定するための処理
-	srcfile, err := os.Open(srcPath) //maybe file path
+	mw1 := imagick.NewMagickWand()
+	defer mw1.Destroy()
+	err := mw1.ReadImage(srcPath)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
-	}
-	defer srcfile.Close() // file close (after operation end)
-	_, t, err := image.Decode(srcfile)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
+		panic(err)
 	}
 
-	//rectange info of image
-	rowSize := inCvImg.Rows()
-	colSize := inCvImg.Cols()
-	minNum := int(math.Min(float64(rowSize), float64(colSize)))
+	// scale 1:1
+	width := mw1.GetImageWidth()
+	height := mw1.GetImageHeight()
+	maxNum := int(math.Max(float64(width), float64(height)))
+	fmt.Printf("Width: %d --> %d \n", width, maxNum)
+	fmt.Printf("Height: %d --> %d \n", height, maxNum)
 
-	//scale 1:1
-	originPoint := image.Point{0, 0}
-	outputImg := gocv.NewMatWithSize(colSize, rowSize, gocv.MatTypeCV8U)
-	gocv.Resize(inCvImg, &outputImg, originPoint, 1.0, 1.0, gocv.InterpolationMax)
-	outputImg = outputImg.Region(image.Rectangle{image.Point{0, 0}, image.Point{minNum, minNum}})
-	dstimg, _ := outputImg.ToImage()
-
-	fmt.Printf("Width: %d --> %d \n", colSize, minNum)
-	fmt.Printf("Height: %d --> %d \n", rowSize, minNum)
+	// resize canvas
+	err = mw1.ExtentImage(uint(maxNum), uint(maxNum), 0, 0)
+	if err != nil {
+		panic(err)
+	}
 
 	// dst dir
 	dstDir := filepath.Dir(srcPath)
@@ -67,35 +57,9 @@ func main() {
 	dstFilename := nowTime.Format("2006-01-02-150405")
 
 	dstPath := filepath.Join(dstDir, dstFilename+dstExt)
-	dstfile, err := os.Create(dstPath)
 
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
-	}
-	defer dstfile.Close()
-
-	// encode resized image
-	// 画像フォーマットごとに出力方式を変える
-	switch t {
-	case "jpeg":
-		if err := jpeg.Encode(dstfile, dstimg, &jpeg.Options{Quality: 100}); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-	case "gif":
-		if err := gif.Encode(dstfile, dstimg, nil); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-	case "png":
-		if err := png.Encode(dstfile, dstimg); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-	default:
-		fmt.Fprintln(os.Stderr, "format error")
-	}
+	// ファイル出力
+	mw1.WriteImage(dstPath)
 
 	// 終了メッセージ出力
 	fmt.Println(dstPath, " output complete!!")

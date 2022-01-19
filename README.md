@@ -8,7 +8,11 @@ Makefileのinstallはgo installを使ってはいませんが、Path上にバイ
 
 [前提条件]  
 
-以下URLを参考に、最新版のopencvを導入していること  
-Ubuntu20.04/go1.16.10環境の場合は、go getした際に取得したzipファイルを解凍して生成されたフォルダでmake installすることで最新のopencvがインストールされます  
-
-https://gocv.io/getting-started/  
+以下コマンドを実行してlibmagickwand-devを導入していること  
+```  
+$ sudo apt install -y libmagickwand-dev
+```  
+その後、以下コマンドを実行してImageMagickのgoモジュールを取得していること  
+```  
+$ go get gopkg.in/gographics/imagick.v2/imagick
+```  
